@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  
+  # Servicio EMQX
+  emqx:
+    container_name: eqmx
+    image: emqx/emqx:latest
+    restart: always
+    ports:
+      - 18083:18083       # Dashboard
+      - 8083:8083         # MQTT no seguro
+      - 8084:8084         # MQTT seguro
+    environment:
+
+    
+      EMQX_LISTENER__TCP__EXTERNAL__MAX_CONNECTIONS: 500      # Cantidad max de conexiones en el 1883 inseguro
+
+
+
+
+  # Servicio MongoDB
+  mongo:
+    container_name: mongodb
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017       # Base de datos
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  mongo-express:
+    container_name: mongoAdmin
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081        # Dashboard
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
