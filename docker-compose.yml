@@ -38,7 +38,7 @@ services:
       EMQX_LISTENER__TCP__EXTERNAL__MAX_CONNECTIONS: 500      # Cantidad max de conexiones en el 1883 inseguro
 
       # DEFAULT DASH PASS
-      EMQX_DASHBOARD__DEFAULT_USER__PASSWORD: "${EMQX_Pass} "
+      EMQX_DASHBOARD__DEFAULT_USER__PASSWORD: "${EMQX_Pass} " # Dash
 
       EMQX_ALLOW_ANONYMOUS: "false"
 
