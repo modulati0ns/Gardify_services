@@ -1,41 +1,123 @@
 version: "3.8"
 
+volumes:
+  vol-emqx-data:
+    name: emqx-data
+  vol-emqx-etc:
+    name: emqx-etc
+  vol-emqx-log:
+    name: emqx-log
+
+
 services:
   
   # Servicio EMQX
   emqx:
     container_name: eqmx
-    image: emqx/emqx:latest
+    image: emqx/emqx-ee:4.2.5
     restart: always
-    ports:
-      - 18083:18083       # Dashboard
-      - 8083:8083         # MQTT no seguro
-      - 8084:8084         # MQTT seguro
-    environment:
 
-    
+    ports:
+      - 18083:18083
+      - 18084:18084
+      - 1883:1883
+      - 8883:8883
+      - 8083:8083
+      - 8084:8084
+      - 8085:8081
+
+    links: 
+     - mongo                                                  # Enlace a MongoDB. Uso su nombre para referirme al dentro del container
+
+
+    environment:
+      # Configuracion general
+      TZ: Europe/Madrid                                       # Timezone
+      EMQX_NAME: GardifyEMQX                                  # Nombre del nodo
+      EMQX_HOST: 127.0.0.1                                    # IP del nodo
       EMQX_LISTENER__TCP__EXTERNAL__MAX_CONNECTIONS: 500      # Cantidad max de conexiones en el 1883 inseguro
 
+      # DEFAULT DASH PASS
+      EMQX_DASHBOARD__DEFAULT_USER__PASSWORD: "${EMQX_Pass} "
+
+      EMQX_ALLOW_ANONYMOUS: "false"
+
+      # MONGO CONNECTION
+      EMQX_AUTH__MONGO__TYPE: single
+      EMQX_AUTH__MONGO__TOPOLOGY__POOL_SIZE: 1
+      EMQX_AUTH__MONGO__TOPOLOGY__MAX_OVERFLOW: 0
+
+      EMQX_AUTH__MONGO__SERVER: "mongo:27017"
+      EMQX_AUTH__MONGO__POOL: 8
+
+      EMQX_AUTH__MONGO__LOGIN: "${Mongo_Username}"
+      EMQX_AUTH__MONGO__PASSWORD: "${Mongo_Pass}"
+      EMQX_AUTH__MONGO__AUTH_SOURCE: "admin"
+
+      EMQX_AUTH__MONGO__DATABASE: "Gardify"
+      EMQX_AUTH__MONGO__AUTH_QUERY__COLLECTION: "emqxACL"
+
+      EMQX_AUTH__MONGO__SUPER_QUERY__COLLECTION: "emqxACL"
+      EMQX_AUTH__MONGO__SUPER_QUERY__SUPER_FIELD: "is_superuser"
+      EMQX_AUTH__MONGO__SUPER_QUERY__SELECTOR: "username=%u"
+      EMQX_AUTH__MONGO__SUPER_QUERY: "off"
+
+      EMQX_AUTH__MONGO__AUTH_QUERY__PASSWORD_HASH: "plain"
+      EMQX_AUTH__MONGO__AUTH_QUERY__PASSWORD_FIELD: "password"
+      EMQX_AUTH__MONGO__AUTH_QUERY__SELECTOR: "username=%u"
+
+      # Enable ACL query.
+      # Access control list
+      EMQX_AUTH__MONGO__ACL_QUERY: "on"
+      EMQX_AUTH__MONGO__ACL_QUERY__COLLECTION: "emqxACL"
+      EMQX_AUTH__MONGO__ACL_QUERY__SELECTOR: "username=%u"
+
+
+    volumes:
+      - vol-emqx-data:/opt/emqx/data                          # Volumenes para persistencia de datos
+      - vol-emqx-etc:/opt/emqx/etc
+      - vol-emqx-log:/opt/emqx/log
+    
 
 
 
   # Servicio MongoDB
   mongo:
-    container_name: mongodb
-    image: mongo
+    container_name: mongo
+    image: mongo:4.4
     restart: always
     ports:
-      - 27017:27017       # Base de datos
+      - 27017:27017                                           # Base de datos
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_ROOT_USERNAME: ${Mongo_Username}           # Credenciales de entrada a mongo
+      MONGO_INITDB_ROOT_PASSWORD: ${Mongo_Pass} 
 
-  mongo-express:
-    container_name: mongoAdmin
-    image: mongo-express
-    restart: always
-    ports:
-      - 8081:8081        # Dashboard
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+    volumes:
+      - ./data:/data/db                                       # Persistencia local de los datos
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  # mongo-express:
+  #   container_name: mongoAdmin
+  #   image: mongo-express
+  #   restart: always
+  #   ports:
+  #     - 8081:8081        # Dashboard
+  #   environment:
+  #     ME_CONFIG_MONGODB_ADMINUSERNAME: root
+  #     ME_CONFIG_MONGODB_ADMINPASSWORD: example
