@@ -8,13 +8,13 @@ volumes:
   vol-emqx-log:
     name: emqx-log
 
-
 services:
-  
   # Servicio EMQX
   emqx:
     container_name: eqmx
-    image: emqx/emqx-ee:4.2.5
+    # image: emqx/emqx-ee:4.2.3
+
+    image: emqx/emqx:4.2.3
     restart: always
 
     ports:
@@ -26,21 +26,24 @@ services:
       - 8084:8084
       - 8085:8081
 
-    links: 
-     - mongo                                                  # Enlace a MongoDB. Uso su nombre para referirme al dentro del container
-
+    links:
+      - mongo # Enlace a MongoDB. Uso su nombre para referirme al dentro del container
+    extra_hosts:
+      - "localhost:192.168.1.147" # Enlace que define que "localhost" dentro del contenedor redigira a la ip externa definida
 
     environment:
       # Configuracion general
-      TZ: Europe/Madrid                                       # Timezone
-      EMQX_NAME: GardifyEMQX                                  # Nombre del nodo
-      EMQX_HOST: 127.0.0.1                                    # IP del nodo
-      EMQX_LISTENER__TCP__EXTERNAL__MAX_CONNECTIONS: 500      # Cantidad max de conexiones en el 1883 inseguro
+      TZ: Europe/Madrid # Timezone
+      EMQX_NAME: GardifyEMQX # Nombre del nodo
+      EMQX_HOST: 127.0.0.1 # IP del nodo
 
       # DEFAULT DASH PASS
-      EMQX_DASHBOARD__DEFAULT_USER__PASSWORD: "${EMQX_Pass} " # Dash
+      EMQX_DASHBOARD__DEFAULT_USER__PASSWORD: "${EMQX_Pass}" # Contraseña de dashboard
 
-      EMQX_ALLOW_ANONYMOUS: "false"
+      # EMQX CONFIG
+      EMQX_ALLOW_ANONYMOUS: "false" # No permitir mensajes sin autenticacion
+      EMQX_LISTENER__TCP__EXTERNAL__MAX_CONNECTIONS: 500 # Cantidad max de conexiones en el 1883 inseguro
+      EMQX_MANAGEMENT__DEFAULT_APPLICATION__SECRET: "${EMQX_API_Pass}" # Contraseña para poder acceder a la API de EMQX
 
       # MONGO CONNECTION
       EMQX_AUTH__MONGO__TYPE: single
@@ -72,14 +75,12 @@ services:
       EMQX_AUTH__MONGO__ACL_QUERY__COLLECTION: "emqxACL"
       EMQX_AUTH__MONGO__ACL_QUERY__SELECTOR: "username=%u"
 
+      EMQX_LOADED_PLUGINS: "emqx_recon,emqx_retainer,emqx_management,emqx_dashboard, emqx_auth_mongo"
 
     volumes:
-      - vol-emqx-data:/opt/emqx/data                          # Volumenes para persistencia de datos
+      - vol-emqx-data:/opt/emqx/data # Volumenes para persistencia de datos
       - vol-emqx-etc:/opt/emqx/etc
       - vol-emqx-log:/opt/emqx/log
-    
-
-
 
   # Servicio MongoDB
   mongo:
@@ -87,37 +88,10 @@ services:
     image: mongo:4.4
     restart: always
     ports:
-      - 27017:27017                                           # Base de datos
+      - 27017:27017 # Base de datos
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${Mongo_Username}           # Credenciales de entrada a mongo
-      MONGO_INITDB_ROOT_PASSWORD: ${Mongo_Pass} 
+      MONGO_INITDB_ROOT_USERNAME: ${Mongo_Username} # Credenciales de entrada a mongo
+      MONGO_INITDB_ROOT_PASSWORD: ${Mongo_Pass}
 
     volumes:
-      - ./data:/data/db                                       # Persistencia local de los datos
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  # mongo-express:
-  #   container_name: mongoAdmin
-  #   image: mongo-express
-  #   restart: always
-  #   ports:
-  #     - 8081:8081        # Dashboard
-  #   environment:
-  #     ME_CONFIG_MONGODB_ADMINUSERNAME: root
-  #     ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      - ./data:/data/db # Persistencia local de los datos
